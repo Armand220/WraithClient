@@ -58,7 +58,7 @@ public partial class App : Application
         // Check for updates in the background — only shows a dialog if a newer version exists
         AutoUpdater.AppTitle   = "Wraith Client";
         AutoUpdater.RunUpdateAsAdmin = false;
-        AutoUpdater.Start("https://raw.githubusercontent.com/Armand220/WraithClient/main/update.xml");
+        AutoUpdater.Start("https://raw.githubusercontent.com/Armand220/WraithClient/master/update.xml");
 
         var splash = new SplashWindow();
         MainWindow = splash;
