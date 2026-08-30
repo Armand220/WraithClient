@@ -1,0 +1,15 @@
+bin/
+obj/
+publish/
+*.user
+.vs/
+crash.log
+publish_backup*.zip
+
+# Gradle / Fabric mod build outputs
+.gradle/
+build/
+WraithMod*/.gradle/
+WraithMod*/build/
+WraithModForge/.gradle/
+WraithModForge/build/

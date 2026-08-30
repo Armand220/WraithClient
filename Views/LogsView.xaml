@@ -1,0 +1,72 @@
+<Page x:Class="WraithClient.Views.LogsView"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="Transparent"
+      FontFamily="Segoe UI">
+
+    <DockPanel>
+
+        <!-- Header -->
+        <Border DockPanel.Dock="Top" Padding="24,20,24,14"
+                BorderBrush="#141414" BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel>
+                    <TextBlock Text="Logs" Foreground="#ECECEC" FontSize="20" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="LogPathText" Foreground="#333" FontSize="11"
+                               Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border x:Name="LiveDot" Width="8" Height="8" CornerRadius="4"
+                            Background="#333" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="LiveText" Text="Watching" Foreground="#444"
+                               FontSize="11" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                    <Button Content="Clear" Style="{StaticResource GhostBtn}"
+                            Padding="14,6" Click="Clear_Click"/>
+                    <Button Content="Open File" Style="{StaticResource GhostBtn}"
+                            Padding="14,6" Margin="8,0,0,0" Click="OpenFile_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Filter bar -->
+        <Border DockPanel.Dock="Top" Padding="24,10,24,10"
+                BorderBrush="#141414" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Filter:" Foreground="#444" FontSize="11"
+                           VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <Border x:Name="FilterAll"   PreviewMouseLeftButtonDown="Filter_Click" Tag="ALL"
+                        Background="#1EFFFFFF" BorderBrush="#2A2A2A" BorderThickness="1"
+                        CornerRadius="4" Padding="10,3" Margin="0,0,6,0" Cursor="Hand">
+                    <TextBlock Text="All" Foreground="#CCC" FontSize="11"/>
+                </Border>
+                <Border x:Name="FilterInfo"  PreviewMouseLeftButtonDown="Filter_Click" Tag="INFO"
+                        Background="#111" BorderBrush="#222" BorderThickness="1"
+                        CornerRadius="4" Padding="10,3" Margin="0,0,6,0" Cursor="Hand">
+                    <TextBlock Text="INFO" Foreground="#555" FontSize="11"/>
+                </Border>
+                <Border x:Name="FilterWarn"  PreviewMouseLeftButtonDown="Filter_Click" Tag="WARN"
+                        Background="#111" BorderBrush="#222" BorderThickness="1"
+                        CornerRadius="4" Padding="10,3" Margin="0,0,6,0" Cursor="Hand">
+                    <TextBlock Text="WARN" Foreground="#C89040" FontSize="11"/>
+                </Border>
+                <Border x:Name="FilterError" PreviewMouseLeftButtonDown="Filter_Click" Tag="ERROR"
+                        Background="#111" BorderBrush="#222" BorderThickness="1"
+                        CornerRadius="4" Padding="10,3" Cursor="Hand">
+                    <TextBlock Text="ERROR" Foreground="#C85050" FontSize="11"/>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- Log output -->
+        <ScrollViewer x:Name="LogScroll" VerticalScrollBarVisibility="Auto"
+                      Background="#050505">
+            <StackPanel x:Name="LogLines" Margin="24,12,24,24"/>
+        </ScrollViewer>
+    </DockPanel>
+</Page>
