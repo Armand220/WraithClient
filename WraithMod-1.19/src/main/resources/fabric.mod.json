@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "wraith",
+  "version": "${version}",
+  "name": "Wraith Mod",
+  "description": "Wraith Client in-game features. Press Right Shift to open the menu.",
+  "authors": ["Wraith Studios"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.wraith.WraithModClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.14.0",
+    "fabric-api": "*",
+    "minecraft": ">=1.16 <1.20"
+  }
+}
