@@ -175,9 +175,13 @@ public partial class HomeView : Page
         StopBtn.Visibility        = Visibility.Visible;
         LaunchProgress.Visibility = Visibility.Visible;
 
-        // Install Fabric/Forge when any mod is active so the loader is present
+        // FabricInstaller writes version JSON to .minecraft/versions — CmlLib must use .minecraft as base.
+        var dotMinecraft = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft");
+
         string? fabricVersionId = null;
-        string? modsDir         = null;
+        string  modsDir         = GetCrackedModsDir();
+        string? gameDirOverride = null;
 
         if (needsMods)
         {
@@ -187,7 +191,9 @@ public partial class HomeView : Page
                 try
                 {
                     fabricVersionId = await FabricInstaller.InstallProfileAsync(version, Log);
-                    modsDir = Path.Combine(SettingsService.GetVersionGameDir(version), "mods");
+                    // Use .minecraft so CmlLib finds the Fabric version JSON there
+                    gameDirOverride = dotMinecraft;
+                    modsDir = Path.Combine(dotMinecraft, "mods");
                 }
                 catch (Exception ex)
                 {
@@ -204,7 +210,6 @@ public partial class HomeView : Page
                 {
                     void ThreadSafeLog(string l) => Dispatcher.Invoke(() => Log(l));
                     await ForgeInstaller.InstallProfileAsync(version, ThreadSafeLog);
-                    modsDir = GetCrackedModsDir();
                 }
                 catch (Exception ex)
                 {
@@ -215,8 +220,6 @@ public partial class HomeView : Page
                 }
             }
         }
-
-        modsDir ??= GetCrackedModsDir();
 
         if (App.Settings.InjectWraithMod)
             InjectMod(modsDir);
@@ -230,15 +233,11 @@ public partial class HomeView : Page
 
         Log($"[Wraith] Launching {version} (cracked, {(fabricVersionId != null ? "Fabric" : "vanilla")})...");
 
-        var gameDir = fabricVersionId != null
-            ? SettingsService.GetVersionGameDir(version)
-            : null;
-
         try
         {
             await _launcher.LaunchAsync(App.Settings, AuthService.GetOfflineSession(name),
                 versionOverride: fabricVersionId,
-                gameDirOverride: gameDir);
+                gameDirOverride: gameDirOverride);
         }
         catch (Exception ex)
         {
