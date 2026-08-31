@@ -9,7 +9,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
     <Company>Wraith Studios</Company>
     <Product>Wraith Client</Product>
     <ApplicationIcon>Assets\wraith.ico</ApplicationIcon>
