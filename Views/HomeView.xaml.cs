@@ -165,25 +165,80 @@ public partial class HomeView : Page
         App.Settings.QuickConnectPort = int.TryParse(PortBox.Text, out var p) ? p : 25565;
         SettingsService.Save(App.Settings);
 
-        if (App.Settings.InjectWraithMod)
-            InjectMod(GetCrackedModsDir());
-
-        InjectCheats(GetCrackedModsDir());
+        var version   = App.Settings.SelectedVersion;
+        var useFabric = IsFabricSupported(version);
+        var needsMods = App.Settings.InjectWraithMod || App.Settings.EnabledCheats.Count > 0;
 
         _gameRunning = true;
         PlayBtn.IsEnabled         = false;
-        PlayBtn.Content           = "Launching...";
+        PlayBtn.Content           = "Setting up...";
         StopBtn.Visibility        = Visibility.Visible;
         LaunchProgress.Visibility = Visibility.Visible;
 
-        if (App.Settings.DiscordRpc)
-            App.Discord.SetPlaying(App.Settings.SelectedVersion, App.Settings.QuickConnectIp);
+        // Install Fabric/Forge when any mod is active so the loader is present
+        string? fabricVersionId = null;
+        string? modsDir         = null;
 
-        Log($"[Wraith] Launching {App.Settings.SelectedVersion} (cracked)...");
+        if (needsMods)
+        {
+            if (useFabric)
+            {
+                SetStatus("Installing Fabric...", false);
+                try
+                {
+                    fabricVersionId = await FabricInstaller.InstallProfileAsync(version, Log);
+                    modsDir = Path.Combine(SettingsService.GetVersionGameDir(version), "mods");
+                }
+                catch (Exception ex)
+                {
+                    Log($"[Wraith] Fabric install failed: {ex.Message}");
+                    SetStatus("Fabric install failed", false);
+                    ResetPlay();
+                    return;
+                }
+            }
+            else
+            {
+                SetStatus($"Installing Forge for {version}...", false);
+                try
+                {
+                    void ThreadSafeLog(string l) => Dispatcher.Invoke(() => Log(l));
+                    await ForgeInstaller.InstallProfileAsync(version, ThreadSafeLog);
+                    modsDir = GetCrackedModsDir();
+                }
+                catch (Exception ex)
+                {
+                    Log($"[Wraith] Forge install failed: {ex.Message}");
+                    SetStatus("Forge install failed", false);
+                    ResetPlay();
+                    return;
+                }
+            }
+        }
+
+        modsDir ??= GetCrackedModsDir();
+
+        if (App.Settings.InjectWraithMod)
+            InjectMod(modsDir);
+
+        InjectCheats(modsDir);
+
+        PlayBtn.Content = "Launching...";
+
+        if (App.Settings.DiscordRpc)
+            App.Discord.SetPlaying(version, App.Settings.QuickConnectIp);
+
+        Log($"[Wraith] Launching {version} (cracked, {(fabricVersionId != null ? "Fabric" : "vanilla")})...");
+
+        var gameDir = fabricVersionId != null
+            ? SettingsService.GetVersionGameDir(version)
+            : null;
 
         try
         {
-            await _launcher.LaunchAsync(App.Settings, AuthService.GetOfflineSession(name));
+            await _launcher.LaunchAsync(App.Settings, AuthService.GetOfflineSession(name),
+                versionOverride: fabricVersionId,
+                gameDirOverride: gameDir);
         }
         catch (Exception ex)
         {

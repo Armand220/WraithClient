@@ -24,11 +24,14 @@ public class MinecraftLaunchService
     public async Task<bool> LaunchAsync(
         AppSettings settings,
         AuthResult auth,
+        string? versionOverride = null,
+        string? gameDirOverride = null,
         CancellationToken ct = default)
     {
-        var gameDir = string.IsNullOrEmpty(settings.GameDirectory)
-            ? SettingsService.GetDefaultGameDir()
-            : settings.GameDirectory;
+        var gameDir = gameDirOverride
+            ?? (string.IsNullOrEmpty(settings.GameDirectory)
+                ? SettingsService.GetDefaultGameDir()
+                : settings.GameDirectory);
 
         Directory.CreateDirectory(gameDir);
 
@@ -88,7 +91,7 @@ public class MinecraftLaunchService
 
         Report("Downloading / verifying files...", 5);
 
-        var process = await launcher.InstallAndBuildProcessAsync(settings.SelectedVersion, option);
+        var process = await launcher.InstallAndBuildProcessAsync(versionOverride ?? settings.SelectedVersion, option);
 
         process.StartInfo.RedirectStandardOutput = true;
         process.StartInfo.RedirectStandardError  = true;
