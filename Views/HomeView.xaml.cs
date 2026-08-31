@@ -175,9 +175,8 @@ public partial class HomeView : Page
         StopBtn.Visibility        = Visibility.Visible;
         LaunchProgress.Visibility = Visibility.Visible;
 
-        // FabricInstaller writes version JSON to .minecraft/versions — CmlLib must use .minecraft as base.
-        var dotMinecraft = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft");
+        // Each MC version gets its own isolated dir — no cross-version mod conflicts.
+        var isolatedDir = SettingsService.GetVersionGameDir(version);
 
         string? fabricVersionId = null;
         string  modsDir         = GetCrackedModsDir();
@@ -190,10 +189,10 @@ public partial class HomeView : Page
                 SetStatus("Installing Fabric...", false);
                 try
                 {
-                    fabricVersionId = await FabricInstaller.InstallProfileAsync(version, Log);
-                    // Use .minecraft so CmlLib finds the Fabric version JSON there
-                    gameDirOverride = dotMinecraft;
-                    modsDir = Path.Combine(dotMinecraft, "mods");
+                    // Pass isolatedDir so Fabric JSON goes there — CmlLib will find it
+                    fabricVersionId = await FabricInstaller.InstallProfileAsync(version, Log, isolatedDir);
+                    gameDirOverride = isolatedDir;
+                    modsDir = Path.Combine(isolatedDir, "mods");
                 }
                 catch (Exception ex)
                 {

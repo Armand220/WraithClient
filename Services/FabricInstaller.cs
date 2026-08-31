@@ -8,17 +8,16 @@ public static class FabricInstaller
 {
     private static readonly HttpClient Http = new();
 
-    private static string MinecraftDir =>
+    public static string DotMinecraft =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft");
 
     /// <summary>
-    /// Downloads the Fabric version JSON for the given MC version, writes it to
-    /// .minecraft/versions/, and upserts a "Wraith {version}" profile in
-    /// launcher_profiles.json — exactly what the Fabric installer does.
+    /// Downloads the Fabric version JSON for the given MC version, writes it into
+    /// baseDir/versions/, and (when baseDir is .minecraft) upserts a launcher profile.
     /// Returns the Fabric version ID on success.
     /// </summary>
     public static async Task<string> InstallProfileAsync(string mcVersion, Action<string> log,
-        CancellationToken ct = default)
+        string? baseDir = null, CancellationToken ct = default)
     {
         // 1. Resolve latest stable Fabric loader for this MC version
         log($"[Fabric] Fetching loader info for {mcVersion}...");
@@ -40,8 +39,13 @@ public static class FabricInstaller
         var fabricId = $"fabric-loader-{loaderVersion}-{mcVersion}";
         log($"[Fabric] Using loader {loaderVersion} → {fabricId}");
 
-        // 2. Download version profile JSON from Fabric meta and save it
-        var versionsDir = Path.Combine(MinecraftDir, "versions", fabricId);
+        // baseDir is where versions/ and libraries/ live (MinecraftPath root for CmlLib).
+        // For cracked: isolated per-version dir. For premium: .minecraft so launcher sees it.
+        var mcDir = baseDir ?? DotMinecraft;
+        Directory.CreateDirectory(mcDir);
+
+        // 2. Download version profile JSON into mcDir/versions/
+        var versionsDir = Path.Combine(mcDir, "versions", fabricId);
         Directory.CreateDirectory(versionsDir);
 
         var versionJsonPath = Path.Combine(versionsDir, $"{fabricId}.json");
@@ -50,51 +54,47 @@ public static class FabricInstaller
             $"https://meta.fabricmc.net/v2/versions/loader/{mcVersion}/{loaderVersion}/profile/json", ct);
         await File.WriteAllTextAsync(versionJsonPath, versionJson, ct);
 
-        // 3. Upsert profile in launcher_profiles.json
-        log("[Fabric] Writing launcher profile...");
-        var profilesPath = Path.Combine(MinecraftDir, "launcher_profiles.json");
-
-        JObject root;
-        if (File.Exists(profilesPath))
+        // 3. For premium (.minecraft), also upsert a launcher profile
+        if (baseDir == null || string.Equals(mcDir, DotMinecraft, StringComparison.OrdinalIgnoreCase))
         {
-            try { root = JObject.Parse(await File.ReadAllTextAsync(profilesPath, ct)); }
-            catch { root = new JObject(); }
+            log("[Fabric] Writing launcher profile...");
+            var profilesPath = Path.Combine(DotMinecraft, "launcher_profiles.json");
+
+            JObject root;
+            if (File.Exists(profilesPath))
+            {
+                try { root = JObject.Parse(await File.ReadAllTextAsync(profilesPath, ct)); }
+                catch { root = new JObject(); }
+            }
+            else { root = new JObject(); }
+
+            if (root["profiles"] is not JObject profiles)
+            {
+                profiles = new JObject();
+                root["profiles"] = profiles;
+            }
+
+            var wraithGameDir = SettingsService.GetVersionGameDir(mcVersion);
+            Directory.CreateDirectory(wraithGameDir);
+
+            profiles[$"wraith-{mcVersion}"] = new JObject
+            {
+                ["name"]          = $"Wraith {mcVersion}",
+                ["type"]          = "custom",
+                ["created"]       = DateTime.UtcNow.ToString("O"),
+                ["lastUsed"]      = DateTime.UtcNow.ToString("O"),
+                ["lastVersionId"] = fabricId,
+                ["gameDir"]       = wraithGameDir,
+                ["icon"]          = "Crafting_Table"
+            };
+
+            await File.WriteAllTextAsync(profilesPath,
+                root.ToString(Newtonsoft.Json.Formatting.Indented), ct);
+            log($"[Fabric] Profile \"Wraith {mcVersion}\" ready.");
         }
-        else
-        {
-            root = new JObject();
-        }
 
-        if (root["profiles"] is not JObject profiles)
-        {
-            profiles = new JObject();
-            root["profiles"] = profiles;
-        }
-
-        // Use a dedicated game directory so the Wraith profile is fully isolated
-        // from the user's main .minecraft (avoids conflicts with other clients/mods).
-        var wraithGameDir = SettingsService.GetVersionGameDir(mcVersion);
-        Directory.CreateDirectory(wraithGameDir);
-
-        var profileKey = $"wraith-{mcVersion}";
-        profiles[profileKey] = new JObject
-        {
-            ["name"]          = $"Wraith {mcVersion}",
-            ["type"]          = "custom",
-            ["created"]       = DateTime.UtcNow.ToString("O"),
-            ["lastUsed"]      = DateTime.UtcNow.ToString("O"),
-            ["lastVersionId"] = fabricId,
-            ["gameDir"]       = wraithGameDir,
-            ["icon"]          = "Crafting_Table"
-        };
-
-        await File.WriteAllTextAsync(profilesPath,
-            root.ToString(Newtonsoft.Json.Formatting.Indented), ct);
-
-        log($"[Fabric] Profile \"Wraith {mcVersion}\" ready (game dir: {wraithGameDir}).");
-
-        // 4. Download Fabric API into the mods dir if not already present
-        var modsDir = Path.Combine(wraithGameDir, "mods");
+        // 4. Download Fabric API into mcDir/mods/
+        var modsDir = Path.Combine(mcDir, "mods");
         await DownloadFabricApiAsync(mcVersion, modsDir, log, ct);
 
         return fabricId;
