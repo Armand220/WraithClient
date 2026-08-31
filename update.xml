@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <item>
-    <version>1.3</version>
+    <version>1.3.0</version>
     <url>https://github.com/Armand220/WraithClient/releases/download/v1.3/WraithClient_Setup_v1.3.exe</url>
     <changelog>https://github.com/Armand220/WraithClient/releases/tag/v1.3</changelog>
     <mandatory>false</mandatory>

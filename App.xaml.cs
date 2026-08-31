@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Threading;
 using System.Windows;
 using AutoUpdaterDotNET;
@@ -60,6 +61,8 @@ public partial class App : Application
 
         AutoUpdater.AppTitle = "Wraith Client";
         AutoUpdater.RunUpdateAsAdmin = false;
+        // Explicitly pin the installed version so AutoUpdater never misreads it
+        AutoUpdater.InstalledVersion = Assembly.GetEntryAssembly()!.GetName().Version;
         AutoUpdater.CheckForUpdateEvent += args =>
         {
             Dispatcher.Invoke(() =>
