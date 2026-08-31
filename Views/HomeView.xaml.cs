@@ -222,6 +222,8 @@ public partial class HomeView : Page
 
         if (App.Settings.InjectWraithMod)
             InjectMod(modsDir);
+        else
+            RemoveMod(modsDir);
 
         InjectCheats(modsDir);
 
@@ -308,6 +310,8 @@ public partial class HomeView : Page
 
         if (App.Settings.InjectWraithMod)
             InjectMod(GetOfficialModsDir());
+        else
+            RemoveMod(GetOfficialModsDir());
 
         InjectCheats(GetOfficialModsDir());
 
@@ -471,6 +475,16 @@ public partial class HomeView : Page
             Log($"[Wraith] Injected {jarName} into {modsDir}");
         }
         catch (Exception ex) { Log($"[Wraith] Mod inject failed: {ex.Message}"); }
+    }
+
+    private void RemoveMod(string modsDir)
+    {
+        try
+        {
+            var dest = Path.Combine(modsDir, "WraithMod.jar");
+            if (File.Exists(dest)) { File.Delete(dest); Log("[Wraith] Removed WraithMod.jar (disabled)."); }
+        }
+        catch (Exception ex) { Log($"[Wraith] Could not remove WraithMod.jar: {ex.Message}"); }
     }
 
     private void InjectCheats(string modsDir)
